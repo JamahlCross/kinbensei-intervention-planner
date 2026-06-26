@@ -58,29 +58,6 @@
       このアプリは教育・家庭・支援場面での行動支援計画を作るためのツールです。医療上の診断、治療、心理検査の代替ではありません。入力内容はこのブラウザのlocalStorageに保存されます。子どもの情報を入力する場合は、実名ではなくケース名やニックネームの利用をおすすめします。共有PCでは個人情報を入力しないでください。
     </section>
 
-    <section id="plansSection" class="card no-print">
-      <div class="section-title">
-        <span class="step">P</span>
-        <div>
-          <h2>プラン</h2>
-          <p>無料版と有料版の機能差を確認できます。</p>
-        </div>
-      </div>
-
-      <!-- 本番ではこのデモ切替を非表示にし、ログイン・決済情報からプランを判定します。 -->
-      <div class="demo-plan-switch">
-        <label>デモ用プラン切替
-          <select id="demoPlanSelect">
-            <option value="free">Free</option>
-            <option value="pro">Pro</option>
-          </select>
-        </label>
-        <p>本番環境ではこの切替UIを非表示にし、ログイン・決済状態からプランを判定します。</p>
-      </div>
-
-      <div id="pricingCards" class="pricing-grid"></div>
-    </section>
-
     <section class="card no-print">
       <div class="section-title">
         <span class="step">C</span>
@@ -357,6 +334,31 @@
       <div class="feature-actions">
         <button type="button" id="deleteAllDataBtn" class="ghost danger">全データ削除</button>
       </div>
+    </section>
+  </main>
+
+  <main id="plansPage" class="app-shell app-view" hidden>
+    <section id="plansSection" class="card no-print">
+      <div class="section-title">
+        <span class="step">P</span>
+        <div>
+          <h2>プラン</h2>
+          <p>無料版と有料版の機能差を確認できます。普段の作成画面からは分けて、必要な時だけ開けます。</p>
+        </div>
+      </div>
+
+      <!-- 本番ではこのデモ切替を非表示にし、ログイン・決済情報からプランを判定します。 -->
+      <div class="demo-plan-switch">
+        <label>デモ用プラン切替
+          <select id="demoPlanSelect">
+            <option value="free">Free</option>
+            <option value="pro">Pro</option>
+          </select>
+        </label>
+        <p>本番環境ではこの切替UIを非表示にし、ログイン・決済状態からプランを判定します。</p>
+      </div>
+
+      <div id="pricingCards" class="pricing-grid"></div>
     </section>
   </main>
 
