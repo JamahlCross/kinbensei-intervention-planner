@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>勤勉性介入プランナー</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">教育・支援現場向け</p>
+      <h1>勤勉性介入プランナー</h1>
+      <p class="lead">小さな行動、きっかけ、声かけを整理して、続けやすい介入計画書を作成します。</p>
+      <p id="currentPlanBadge" class="plan-status">Free：1ケース・7日記録まで</p>
+    </div>
+    <div class="header-actions no-print">
+      <button type="button" id="saveBtn">保存</button>
+      <button type="button" id="loadBtn">読み込み</button>
+      <button type="button" id="printBtn">印刷</button>
+      <button type="button" id="exportJsonBtn" class="ghost">JSON出力</button>
+      <button type="button" id="importJsonBtn" class="ghost">JSON読込</button>
+      <button type="button" id="resetBtn" class="ghost danger">リセット</button>
+    </div>
+  </header>
+
+  <nav class="top-nav no-print" aria-label="主要メニュー">
+    <button type="button" id="navCreateBtn" class="nav-link active">介入プラン作成</button>
+    <button type="button" id="navRecordsBtn" class="nav-link">記録</button>
+    <button type="button" id="navPlansBtn" class="nav-link">プラン</button>
+    <button type="button" id="navEvidenceBtn" class="nav-link">科学的根拠</button>
+  </nav>
+
+  <!-- ステップの現在位置を示す上部ナビゲーションです。 -->
+  <nav class="progress-panel no-print" aria-label="入力ステップ">
+    <div class="progress-meta">
+      <strong id="progressLabel">Step 1 / 8</strong>
+      <span id="progressTitle">ケース情報</span>
+    </div>
+    <div class="progress-track" aria-hidden="true">
+      <div id="progressFill" class="progress-fill"></div>
+    </div>
+    <div class="step-tabs">
+      <button type="button" class="step-tab active" data-step-target="1">1</button>
+      <button type="button" class="step-tab" data-step-target="2">2</button>
+      <button type="button" class="step-tab" data-step-target="3">3</button>
+      <button type="button" class="step-tab" data-step-target="4">4</button>
+      <button type="button" class="step-tab" data-step-target="5">5</button>
+      <button type="button" class="step-tab" data-step-target="6">6</button>
+      <button type="button" class="step-tab" data-step-target="7">7</button>
+      <button type="button" class="step-tab" data-step-target="8">8</button>
+    </div>
+  </nav>
+
+  <main id="plannerPage" class="app-shell app-view active">
+    <section class="privacy-note">
+      このアプリは教育・家庭・支援場面での行動支援計画を作るためのツールです。医療上の診断、治療、心理検査の代替ではありません。入力内容はこのブラウザのlocalStorageに保存されます。子どもの情報を入力する場合は、実名ではなくケース名やニックネームの利用をおすすめします。共有PCでは個人情報を入力しないでください。
+    </section>
+
+    <section id="plansSection" class="card no-print">
+      <div class="section-title">
+        <span class="step">P</span>
+        <div>
+          <h2>プラン</h2>
+          <p>無料版と有料版の機能差を確認できます。</p>
+        </div>
+      </div>
+
+      <!-- 本番ではこのデモ切替を非表示にし、ログイン・決済情報からプランを判定します。 -->
+      <div class="demo-plan-switch">
+        <label>デモ用プラン切替
+          <select id="demoPlanSelect">
+            <option value="free">Free</option>
+            <option value="pro">Pro</option>
+          </select>
+        </label>
+        <p>本番環境ではこの切替UIを非表示にし、ログイン・決済状態からプランを判定します。</p>
+      </div>
+
+      <div id="pricingCards" class="pricing-grid"></div>
+    </section>
+
+    <section class="card no-print">
+      <div class="section-title">
+        <span class="step">C</span>
+        <div>
+          <h2>ケース管理</h2>
+          <p id="activeCaseLabel">現在のケース：未設定</p>
+        </div>
+      </div>
+      <div class="case-toolbar">
+        <select id="caseSelect" aria-label="ケースを選択"></select>
+        <button type="button" id="addCaseBtn">ケース追加</button>
+        <button type="button" id="deleteCaseBtn" class="ghost danger">ケース削除</button>
+      </div>
+      <p id="caseLimitNote" class="lock-note"></p>
+    </section>
+
+    <section class="card step-panel active" data-step="1">
+      <div class="section-title">
+        <span class="step">1</span>
+        <div>
+          <h2>ケース情報</h2>
+          <p>対象者や場面、いま困っていることを整理します。</p>
+        </div>
+      </div>
+      <div class="grid two">
+        <label>対象者名またはケース名
+          <input id="caseName" type="text" placeholder="例：Aさんの宿題習慣">
+        </label>
+        <label>年齢・学年
+          <input id="grade" type="text" placeholder="例：小学4年生 / 10歳">
+        </label>
+      </div>
+      <label>場面
+        <select id="scene">
+          <option value="">選択してください</option>
+          <option>家庭</option>
+          <option>学校</option>
+          <option>学童</option>
+          <option>療育</option>
+          <option>自習</option>
+          <option>その他</option>
+        </select>
+      </label>
+      <label>困りごと
+        <textarea id="problem" rows="4" placeholder="例：宿題を始めるまでに時間がかかり、声かけが増える"></textarea>
+      </label>
+
+      <div id="templateSection" class="template-box no-print">
+        <h3>テンプレート集</h3>
+        <p>よくある支援場面のサンプルを入力欄に反映できます。</p>
+        <div id="templateList" class="template-grid"></div>
+      </div>
+    </section>
+
+    <section class="card step-panel" data-step="2">
+      <div class="section-title">
+        <span class="step">2</span>
+        <div>
+          <h2>勤勉性の下位側面</h2>
+          <p>今回の介入で育てたい側面を選びます。</p>
+        </div>
+      </div>
+      <div class="checkbox-grid" id="traitsGroup">
+        <label><input type="checkbox" value="努力・粘り">努力・粘り</label>
+        <label><input type="checkbox" value="整理整頓・計画">整理整頓・計画</label>
+        <label><input type="checkbox" value="衝動制御・先延ばし対策">衝動制御・先延ばし対策</label>
+        <label><input type="checkbox" value="自己規律">自己規律</label>
+        <label><input type="checkbox" value="責任感">責任感</label>
+        <label><input type="checkbox" value="生産性">生産性</label>
+      </div>
+    </section>
+
+    <section class="card step-panel" data-step="3">
+      <div class="section-title">
+        <span class="step">3</span>
+        <div>
+          <h2>価値づけ</h2>
+          <p>本人にとって意味のある理由を言葉にします。</p>
+        </div>
+      </div>
+      <label>これができると何が楽になるか
+        <textarea id="easeValue" rows="3" placeholder="例：夜の自由時間を安心して過ごせる"></textarea>
+      </label>
+      <label>本人にとっての意味
+        <textarea id="personalMeaning" rows="3" placeholder="例：自分で決めて動けたという自信につながる"></textarea>
+      </label>
+      <label>理想の自分
+        <textarea id="idealSelf" rows="3" placeholder="例：声をかけられる前に少しだけ始められる自分"></textarea>
+      </label>
+    </section>
+
+    <section class="card step-panel" data-step="4">
+      <div class="section-title">
+        <span class="step">4</span>
+        <div>
+          <h2>現状と理想</h2>
+          <p>どこで止まりやすいかを見える化します。</p>
+        </div>
+      </div>
+      <div class="grid two">
+        <label>現状
+          <textarea id="currentState" rows="4" placeholder="例：声かけがあるまで机に向かわない"></textarea>
+        </label>
+        <label>理想
+          <textarea id="idealState" rows="4" placeholder="例：夕食後に自分で1問だけ始める"></textarea>
+        </label>
+      </div>
+      <div class="grid two">
+        <label>詰まりポイント
+          <textarea id="stuckPoint" rows="4" placeholder="例：何から始めるか迷う"></textarea>
+        </label>
+        <label>邪魔しているもの
+          <textarea id="barrier" rows="4" placeholder="例：動画、疲れ、教材が出ていないこと"></textarea>
+        </label>
+      </div>
+    </section>
+
+    <section class="card step-panel" data-step="5">
+      <div class="section-title">
+        <span class="step">5</span>
+        <div>
+          <h2>小行動の設計</h2>
+          <p>失敗しにくいサイズまで行動を小さくします。</p>
+        </div>
+      </div>
+      <div class="grid two">
+        <label>最小行動
+          <input id="microAction" type="text" placeholder="例：ノートを開く">
+        </label>
+        <label>2分行動
+          <input id="twoMinAction" type="text" placeholder="例：問題を1問読む">
+        </label>
+        <label>5分行動
+          <input id="fiveMinAction" type="text" placeholder="例：算数を1問解く">
+        </label>
+        <label>10分行動
+          <input id="tenMinAction" type="text" placeholder="例：丸つけまで終える">
+        </label>
+      </div>
+    </section>
+
+    <section class="card step-panel" data-step="6">
+      <div class="section-title">
+        <span class="step">6</span>
+        <div>
+          <h2>cue → behavior</h2>
+          <p>きっかけを具体化して、自動的に始めやすくします。</p>
+        </div>
+      </div>
+      <div class="grid two">
+        <label>いつ
+          <input id="cueWhen" type="text" placeholder="例：夕食後">
+        </label>
+        <label>どこで
+          <input id="cueWhere" type="text" placeholder="例：ダイニングテーブルで">
+        </label>
+        <label>何を見たら
+          <input id="cueSignal" type="text" placeholder="例：青いファイルを見たら">
+        </label>
+        <label>何をする
+          <input id="cueBehavior" type="text" placeholder="例：算数を1問だけ解く">
+        </label>
+        <label>終了条件
+          <input id="endCondition" type="text" placeholder="例：カレンダーに丸をつけたら終了">
+        </label>
+        <label>支援者の声かけ
+          <input id="supportPrompt" type="text" placeholder="例：青いファイル、見えたね">
+        </label>
+      </div>
+    </section>
+
+    <section class="card output-card step-panel" id="planSection" data-step="7">
+      <div class="section-title">
+        <span class="step">7</span>
+        <div>
+          <h2>介入計画書</h2>
+          <p>入力内容から自動生成されます。</p>
+        </div>
+      </div>
+      <article id="planOutput" class="plan-output" aria-live="polite"></article>
+      <p id="planFeatureLockNote" class="lock-note no-print"></p>
+      <div class="feature-actions no-print">
+        <button type="button" id="pdfBtn" class="pro-feature" data-feature="pdfExport">PDF出力 <span class="pro-badge">Pro</span></button>
+        <button type="button" id="csvBtn" class="pro-feature" data-feature="csvExport">CSV出力 <span class="pro-badge">Pro</span></button>
+        <button type="button" id="parentLetterBtn" class="pro-feature" data-feature="parentLetter">保護者説明文生成 <span class="pro-badge">Pro</span></button>
+        <button type="button" id="shareBtn" class="pro-feature" data-feature="sharing">共有 <span class="pro-badge">近日対応</span></button>
+      </div>
+      <article id="parentLetterOutput" class="generated-output"></article>
+    </section>
+
+    <section class="card step-panel" data-step="8">
+      <div class="section-title">
+        <span class="step">8</span>
+        <div>
+          <h2>日々の記録</h2>
+          <p>実行できた日を積み重ね、成功率を確認します。</p>
+        </div>
+      </div>
+      <div class="record-form no-print">
+        <label>日付
+          <input id="recordDate" type="date">
+        </label>
+        <label>実行できたか
+          <select id="recordDone">
+            <option value="yes">できた</option>
+            <option value="no">できなかった</option>
+          </select>
+        </label>
+        <label>声かけ回数
+          <input id="promptCount" type="number" min="0" step="1" value="0">
+        </label>
+        <label>気分
+          <select id="mood">
+            <option>落ち着いていた</option>
+            <option>ふつう</option>
+            <option>疲れていた</option>
+            <option>不安そうだった</option>
+            <option>前向きだった</option>
+          </select>
+        </label>
+        <label class="wide">メモ
+          <input id="recordMemo" type="text" placeholder="例：最初の一声で始められた">
+        </label>
+        <button type="button" id="addRecordBtn">記録を追加</button>
+      </div>
+
+      <div class="stats">
+        <div>
+          <span class="stat-label">成功率</span>
+          <strong id="successRate">0%</strong>
+        </div>
+        <div>
+          <span class="stat-label">記録数</span>
+          <strong id="recordCount">0件</strong>
+        </div>
+      </div>
+      <div id="suggestion" class="suggestion"></div>
+      <p id="recordFeatureLockNote" class="lock-note no-print"></p>
+      <div class="feature-actions no-print">
+        <button type="button" id="weeklyReviewBtn" class="pro-feature" data-feature="weeklyReview">週次レビュー生成 <span class="pro-badge">Pro</span></button>
+      </div>
+      <article id="weeklyReviewOutput" class="generated-output"></article>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>日付</th>
+              <th>実行</th>
+              <th>声かけ</th>
+              <th>気分</th>
+              <th>メモ</th>
+              <th class="no-print">操作</th>
+            </tr>
+          </thead>
+          <tbody id="recordsBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="step-actions no-print">
+      <button type="button" id="prevStepBtn" class="ghost">前へ</button>
+      <button type="button" id="nextStepBtn">次へ</button>
+    </div>
+
+    <section class="card no-print">
+      <div class="section-title">
+        <span class="step">B</span>
+        <div>
+          <h2>データ管理</h2>
+          <p>端末内の保存データをバックアップ・削除できます。</p>
+        </div>
+      </div>
+      <div class="feature-actions">
+        <button type="button" id="deleteAllDataBtn" class="ghost danger">全データ削除</button>
+      </div>
+    </section>
+  </main>
+
+  <main id="evidencePage" class="app-shell app-view evidence-page" hidden>
+    <section class="evidence-hero card">
+      <p class="eyebrow">なぜこの方法なのか</p>
+      <h2>科学的根拠</h2>
+      <p>勤勉性介入プランナーは、性格を責めるための道具ではありません。教育心理学・人格心理学・行動科学の知見をもとに、行動が起きやすい環境を小さく設計するための支援ツールです。</p>
+      <div class="feature-actions">
+        <button type="button" id="scienceStartPlanBtn">介入プランを作ってみる</button>
+        <button type="button" id="scienceTemplateBtn" class="ghost">テンプレートから始める</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-title">
+        <span class="step">1</span>
+        <div>
+          <h2>なぜ“勤勉性”を支援するのか</h2>
+          <p>学習や生活の中で、始める・続ける・整える力に関わる特性です。</p>
+        </div>
+      </div>
+      <div class="evidence-grid two">
+        <div class="info-box">
+          <h3>勤勉性とは</h3>
+          <p>勤勉性はBig Five性格特性の1つで、努力、計画性、整理整頓、責任感、自己規律、衝動制御などに関わります。</p>
+          <p>学習場面では、宿題を始める、提出物を管理する、忘れ物を減らす、テスト勉強を計画する、先延ばしを減らす行動に関係します。</p>
+        </div>
+        <div class="message-box">
+          <h3>このアプリの立場</h3>
+          <p>勤勉性は学業成績、先延ばしの少なさ、学習への関与などと関連することが多くの研究で示されています。ただし、完璧主義や過度な自己管理を目指すものではありません。</p>
+          <p>このサービスは「性格を無理やり変える」のではなく、「本人の目標に合った小さな行動を設計する」ことを目指します。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-title">
+        <span class="step">2</span>
+        <div>
+          <h2>勤勉性は変えられるのか</h2>
+          <p>性格特性は完全に固定されたものではなく、行動の積み重ねによって変化しうると考えられています。</p>
+        </div>
+      </div>
+      <div class="message-box">
+        <p>近年の人格心理学では、状態・習慣・行動の積み重ねが、長期的な性格傾向に影響しうると考えられています。2025年の系統的レビューでは、2017年以降の勤勉性介入研究が整理され、条件に合った11本の研究のうち9本で、勤勉性の特性、下位側面、または状態レベルの改善が報告されたとされています。</p>
+        <p>介入タイプには、デジタルコーチング、対面コーチング、行動活性化が含まれていました。一方で、研究数はまだ多くなく、効果の個人差や長期維持については今後の研究が必要です。そのため、このサービスでは「確実に性格が変わる」とは言わず、「行動設計と習慣化を支援する」と表現します。</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-title">
+        <span class="step">3</span>
+        <div>
+          <h2>このサービスの基本モデル</h2>
+          <p>性格を責めるのではなく、行動が起きやすい環境を設計します。</p>
+        </div>
+      </div>
+      <div class="model-flow">
+        <article><strong>1. 価値づけ</strong><span>なぜ変えたいのかを言葉にする</span></article>
+        <article><strong>2. 小行動化</strong><span>2分〜10分でできる行動に分ける</span></article>
+        <article><strong>3. cue → behavior</strong><span>いつ・どこで・何を見たら・何をするかを決める</span></article>
+        <article><strong>4. 実行</strong><span>無理なく始められる最小行動を行う</span></article>
+        <article><strong>5. 記録</strong><span>できた日、声かけ回数、気分、メモを残す</span></article>
+        <article><strong>6. 振り返り</strong><span>成功率や失敗しやすい条件を見る</span></article>
+        <article><strong>7. 調整</strong><span>難しければ小さくし、安定したら少し伸ばす</span></article>
+        <article><strong>8. 習慣化</strong><span>同じ状況で同じ行動が出やすくなる</span></article>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-title">
+        <span class="step">4</span>
+        <div>
+          <h2>背景にある主な理論</h2>
+          <p>専門用語を、アプリでの使い方に結びつけて説明します。</p>
+        </div>
+      </div>
+      <div class="theory-grid">
+        <article class="theory-card">
+          <h3>A. ボトムアップ型の人格変化</h3>
+          <h4>専門的な説明</h4>
+          <p>一時的な行動や状態が繰り返され、習慣化し、自己概念に組み込まれることで、長期的な性格傾向の変化につながる可能性があるという考え方です。</p>
+          <h4>このアプリでの使い方</h4>
+          <p>「勤勉な人になろう」と考えるだけではなく、勤勉性に関係する小さな行動を繰り返せるように設計します。</p>
+        </article>
+        <article class="theory-card">
+          <h3>B. 習慣形成 cue → behavior</h3>
+          <h4>専門的な説明</h4>
+          <p>習慣は、特定の文脈手がかり cue と行動 behavior が繰り返し結びつくことで形成されやすくなります。</p>
+          <h4>このアプリでの使い方</h4>
+          <p>「毎日がんばる」ではなく、「夕食後、机で、青いファイルを見たら、算数を1問解く」のように具体化します。</p>
+        </article>
+        <article class="theory-card">
+          <h3>C. 行動活性化</h3>
+          <h4>専門的な説明</h4>
+          <p>価値ある行動を小さく実行し、達成感・記録・フィードバックを通して行動を増やしていく考え方です。</p>
+          <h4>このアプリでの使い方</h4>
+          <p>本人にとって意味のある目標を小さな行動に変換し、できた経験を積み上げます。</p>
+        </article>
+        <article class="theory-card">
+          <h3>D. コーチングモデル</h3>
+          <h4>専門的な説明</h4>
+          <p>目標、現状、選択肢、実行意志を整理しながら、本人の行動変容を支援する考え方です。</p>
+          <h4>このアプリでの使い方</h4>
+          <p>現状と理想のズレを整理し、どの行動から始めるかを支援者と一緒に決めます。</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-title">
+        <span class="step">5</span>
+        <div>
+          <h2>このアプリが大切にしていること</h2>
+          <p>本人を責めず、行動の設計を見直します。</p>
+        </div>
+      </div>
+      <ul class="check-list">
+        <li>性格を責めない</li>
+        <li>本人の価値や目標につなげる</li>
+        <li>最初の行動は小さくする</li>
+        <li>「いつ・どこで・何をするか」を具体化する</li>
+        <li>成功率が低ければ本人ではなく設計を見直す</li>
+        <li>声かけは人格評価ではなく行動評価にする</li>
+        <li>記録を使って感覚ではなくデータで振り返る</li>
+        <li>完璧を目指さず、続けられる形に調整する</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <div class="section-title">
+        <span class="step">6</span>
+        <div>
+          <h2>研究から見た注意点</h2>
+          <p>支援はやさしく、慎重に、本人に合わせて調整します。</p>
+        </div>
+      </div>
+      <div class="caution-card">
+        <ul>
+          <li>勤勉性介入の研究は増えていますが、まだ研究数は十分に多いとは言えません。</li>
+          <li>効果には個人差があります。</li>
+          <li>ADHD、不安、睡眠不足、家庭環境、学校環境などが関係する場合もあります。</li>
+          <li>医療的・心理的な問題が強い場合は、専門家への相談が必要です。</li>
+          <li>このアプリは診断、治療、心理検査の代替ではありません。</li>
+          <li>高すぎる目標設定は失敗経験を増やす可能性があります。</li>
+          <li>過度な勤勉性は完璧主義や柔軟性の低下につながる場合があります。</li>
+          <li>そのため、このサービスは「無理に厳しくする」のではなく「小さく、具体的に、続けやすく」を重視します。</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-title">
+        <span class="step">7</span>
+        <div>
+          <h2>保護者・支援者へのメッセージ</h2>
+          <p>うまくいかない時ほど、本人ではなく設計を見ます。</p>
+        </div>
+      </div>
+      <blockquote class="support-message">
+        このサービスは、子どもや支援対象者を“だらしない”“意志が弱い”と評価するためのものではありません。うまく行動が始まらないときには、本人の性格だけでなく、行動の大きさ、始めるタイミング、周囲の環境、声かけの仕方が合っていない可能性があります。まずは、小さく始め、記録を見ながら、本人に合う形へ調整していくことを大切にします。
+      </blockquote>
+    </section>
+
+    <section class="card">
+      <div class="section-title">
+        <span class="step">8</span>
+        <div>
+          <h2>参考にした主な研究・理論</h2>
+          <p>厳密な文献管理ではなく、背景理解のための簡易表示です。</p>
+        </div>
+      </div>
+      <div class="reference-list">
+        <article><strong>Turner, M., & Hodis, F. A. (2025). Strengthening Conscientiousness by Means of Interventions: A Systematic Review. Educational Psychology Review.</strong><p>勤勉性を高める介入研究を整理した系統的レビュー。デジタルコーチング、対面コーチング、行動活性化などの研究をレビューしている。</p></article>
+        <article><strong>Roberts et al. の人格変化研究</strong><p>性格特性が介入や経験によって変化しうることを示す研究群。</p></article>
+        <article><strong>Allemand & Flückiger の General Change Factors</strong><p>性格変化に関わる共通要因として、現状と理想のズレへの気づき、強み、洞察、練習を重視する理論。</p></article>
+        <article><strong>Wrzus & Roberts の TESSERA framework</strong><p>状況、期待、状態表現、反応の繰り返しが性格変化につながると考える理論。</p></article>
+        <article><strong>Behavior Activation</strong><p>価値ある行動を小さく実行し、記録とフィードバックを通して行動を増やす考え方。</p></article>
+        <article><strong>Habit formation / cue-behavior association</strong><p>特定の手がかりと行動を結びつけ、反復によって自動化を促す考え方。</p></article>
+      </div>
+    </section>
+
+    <section class="card evidence-cta">
+      <h2>記録を使って、支援を少し深くしたい場合</h2>
+      <p>記録をもとにした週次レビューや、保護者説明文の自動生成を使いたい場合は、Pro機能をご利用ください。</p>
+      <button type="button" id="scienceProBtn">Pro機能を見る</button>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <input id="jsonImportInput" type="file" accept="application/json,.json" hidden>
+
+  <div id="upgradeModal" class="modal-backdrop" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="upgradeModalTitle">
+      <h2 id="upgradeModalTitle">Pro機能のご案内</h2>
+      <p id="upgradeModalMessage">現在はデモ版です。将来的に決済機能を接続します。</p>
+      <div class="modal-actions">
+        <button type="button" id="modalUpgradeBtn">アップグレードを見る</button>
+        <button type="button" id="modalCloseBtn" class="ghost">閉じる</button>
+      </div>
+    </div>
+  </div>
+  <script src="plans.js"></script>
+  <script src="templates.js"></script>
+  <script src="review.js"></script>
+  <script src="storage.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
