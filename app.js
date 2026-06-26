@@ -103,11 +103,11 @@ function setupEventListeners() {
   bindClick("modalUpgradeBtn", closeUpgradeModal);
   bindClick("navCreateBtn", () => showPlannerView({ step: 1 }));
   bindClick("navRecordsBtn", () => showPlannerView({ step: 8 }));
-  bindClick("navPlansBtn", () => showPlannerView({ targetId: "plansSection" }));
+  bindClick("navPlansBtn", showPlansPage);
   bindClick("navEvidenceBtn", showEvidencePage);
   bindClick("scienceStartPlanBtn", () => showPlannerView({ step: 1 }));
   bindClick("scienceTemplateBtn", () => showPlannerView({ step: 1, targetId: "templateSection" }));
-  bindClick("scienceProBtn", () => showPlannerView({ targetId: "plansSection" }));
+  bindClick("scienceProBtn", showPlansPage);
 
   document.getElementById("demoPlanSelect").addEventListener("change", (event) => setPlan(event.target.value));
   document.getElementById("caseSelect").addEventListener("change", (event) => switchCase(event.target.value));
@@ -124,9 +124,10 @@ function bindClick(id, handler) {
 
 function showPlannerView(options = {}) {
   document.getElementById("plannerPage").hidden = false;
+  document.getElementById("plansPage").hidden = true;
   document.getElementById("evidencePage").hidden = true;
   document.querySelector(".progress-panel").hidden = false;
-  setActiveNav(options.step === 8 ? "navRecordsBtn" : options.targetId === "plansSection" ? "navPlansBtn" : "navCreateBtn");
+  setActiveNav(options.step === 8 ? "navRecordsBtn" : "navCreateBtn");
 
   if (options.step) showStep(options.step);
   else renderStep();
@@ -137,8 +138,18 @@ function showPlannerView(options = {}) {
   });
 }
 
+function showPlansPage() {
+  document.getElementById("plannerPage").hidden = true;
+  document.getElementById("plansPage").hidden = false;
+  document.getElementById("evidencePage").hidden = true;
+  document.querySelector(".progress-panel").hidden = true;
+  setActiveNav("navPlansBtn");
+  requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
+}
+
 function showEvidencePage() {
   document.getElementById("plannerPage").hidden = true;
+  document.getElementById("plansPage").hidden = true;
   document.getElementById("evidencePage").hidden = false;
   document.querySelector(".progress-panel").hidden = true;
   setActiveNav("navEvidenceBtn");
