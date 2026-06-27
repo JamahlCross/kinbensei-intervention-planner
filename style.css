@@ -256,7 +256,7 @@ h2 {
 }
 
 .pricing-grid,
-.template-grid {
+.template-card-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
@@ -302,7 +302,8 @@ h2 {
 }
 
 .current-badge,
-.pro-badge {
+.pro-badge,
+.basic-badge {
   display: inline-flex;
   align-items: center;
   min-height: 22px;
@@ -312,6 +313,11 @@ h2 {
   background: var(--accent);
   font-size: 0.78rem;
   font-weight: 900;
+}
+
+.basic-badge {
+  color: var(--primary-dark);
+  background: var(--soft);
 }
 
 .demo-plan-switch,
@@ -343,6 +349,34 @@ h2 {
   border: 1px dashed rgba(47, 125, 107, 0.45);
   border-radius: 8px;
   background: #f8fcf8;
+}
+
+.template-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.template-category {
+  display: grid;
+  gap: 12px;
+}
+
+.template-category-title {
+  display: grid;
+  gap: 4px;
+}
+
+.template-category-title h4 {
+  margin: 0;
+  color: var(--primary-dark);
+  font-size: 1rem;
+}
+
+.template-category-title p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
 }
 
 .template-card {
@@ -814,7 +848,7 @@ tbody tr:last-child td {
   .record-form,
   .stats,
   .pricing-grid,
-  .template-grid,
+  .template-card-grid,
   .evidence-grid.two,
   .theory-grid,
   .check-list {
