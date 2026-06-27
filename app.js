@@ -405,21 +405,49 @@ function renderCaseManager() {
 function renderTemplates() {
   const container = document.getElementById("templateList");
   const canUseAll = getCurrentPlan().templates === "all";
+  const categories = getTemplateCategories();
 
-  container.innerHTML = templates.map((template) => {
-    const locked = template.tier === "pro" && !canUseAll;
+  container.innerHTML = categories.map((category) => {
+    const categoryTemplates = templates.filter((template) => (template.category || "other") === category.id);
+    if (!categoryTemplates.length) return "";
+
     return `
-      <article class="template-card ${locked ? "locked" : ""}">
-        <strong>${escapeHtml(template.name)} ${locked ? `<span class="pro-badge">Pro</span>` : ""}</strong>
-        <button type="button" class="${locked ? "ghost" : ""}" data-template-id="${escapeHtml(template.id)}">${locked ? "ロック中" : "使う"}</button>
-        ${locked ? `<span class="lock-note">Proで利用できます。</span>` : ""}
-      </article>
+      <section class="template-category">
+        <div class="template-category-title">
+          <h4>${escapeHtml(category.name)}</h4>
+          <p>${escapeHtml(category.description)}</p>
+        </div>
+        <div class="template-card-grid">
+          ${categoryTemplates.map((template) => renderTemplateCard(template, canUseAll)).join("")}
+        </div>
+      </section>
     `;
   }).join("");
 
   container.querySelectorAll("[data-template-id]").forEach((button) => {
     button.addEventListener("click", () => applyTemplate(button.dataset.templateId));
   });
+}
+
+function getTemplateCategories() {
+  const categories = typeof templateCategories !== "undefined" && Array.isArray(templateCategories) ? templateCategories : [];
+  const hasUncategorizedTemplates = templates.some((template) => !template.category);
+  return hasUncategorizedTemplates
+    ? categories.concat({ id: "other", name: "その他", description: "分類未設定のテンプレートです。" })
+    : categories;
+}
+
+function renderTemplateCard(template, canUseAll) {
+  const locked = template.tier === "pro" && !canUseAll;
+  const tierLabel = template.tier === "pro" ? `<span class="pro-badge">Pro</span>` : `<span class="basic-badge">Free</span>`;
+
+  return `
+    <article class="template-card ${locked ? "locked" : ""}">
+      <strong>${escapeHtml(template.name)} ${tierLabel}</strong>
+      <button type="button" class="${locked ? "ghost" : ""}" data-template-id="${escapeHtml(template.id)}">${locked ? "ロック中" : "使う"}</button>
+      ${locked ? `<span class="lock-note">Proで利用できます。</span>` : ""}
+    </article>
+  `;
 }
 
 function applyTemplate(templateId) {
